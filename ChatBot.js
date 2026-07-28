@@ -99,6 +99,12 @@
                 if (messageText.includes("Joined ship")) {
                     sendChat("Hai!")
                 }
+
+                // dice roll command: responds with a random number from 1 to 20
+                if (messageText === ".bot dice roll") {
+                    const roll = Math.floor(Math.random() * 20) + 1;
+                    sendChat(`Rolled: ${roll}`);
+                }
             }
         });
     }
