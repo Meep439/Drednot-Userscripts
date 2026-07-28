@@ -1,7 +1,7 @@
 'use strict';
 (function() {
 
-    // html reference bs
+    // html reference
     const chatBox     = document.getElementById("chat");
     const chatInp     = document.getElementById("chat-input");
     const chatBtn     = document.getElementById("chat-send");
@@ -84,7 +84,7 @@
                 }
                 // put more stuff here
             }
-            // runs even if it isn't cap
+            // allows anybody to run
             if (true) {
                 if (messageText === ".bot test") {
                     sendChat("Bot is online")
@@ -95,6 +95,7 @@
                 if (messageText.includes("joined the ship.")) {
                     sendChat(`Hello, ${messageText.split("joined")[0]}!`)
                 }
+                // runs when you join the ship, must be in this section because username cannot detect it's you
                 if (messageText.includes("Joined ship")) {
                     sendChat("Hai!")
                 }
