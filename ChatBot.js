@@ -105,6 +105,22 @@
                     const roll = Math.floor(Math.random() * 20) + 1;
                     sendChat(`Rolled: ${roll}`);
                 }
+
+                // help command: list available commands
+                if (messageText === ".bot help") {
+                    const helpLines = [
+                        "Available bot commands:",
+                        ".bot help - Show this help message",
+                        ".bot test - Check if the bot is online",
+                        ".bot dice roll - Roll a d20 (1-20)",
+                        ".bot clear motd - (admin) Clear the MOTD",
+                        ".bot save - (admin) Save after 30s",
+                        ".bot lock - (admin) Lock the chat",
+                        "(also responds to phrases: 'do the roar', 'joined the ship.', 'Joined ship')",
+                    ];
+                    // send as a single message joined by ' | ' to avoid spamming
+                    sendChat(helpLines.join(' | '));
+                }
             }
         });
     }
