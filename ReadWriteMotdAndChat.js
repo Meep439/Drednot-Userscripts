@@ -11,7 +11,7 @@
 (function() {
     'use strict';
 
-    // html reference bs
+    // html reference
     const chatBox     = document.getElementById("chat");
     const chatInp     = document.getElementById("chat-input");
     const chatBtn     = document.getElementById("chat-send");
