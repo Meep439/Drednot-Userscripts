@@ -100,10 +100,21 @@
                     sendChat("Hai!")
                 }
 
-                // dice roll command: responds with a random number from 1 to 20
-                if (messageText === ".bot dice roll") {
-                    const roll = Math.floor(Math.random() * 20) + 1;
-                    sendChat(`Rolled: ${roll}`);
+                // dice roll command: responds with a random number from 1 to 20 (default) or 1..N if specified
+                if (messageText.toLowerCase().startsWith(".bot dice roll")) {
+                    const parts = messageText.trim().split(/\s+/);
+                    // parts: [".bot", "dice", "roll", "<optional-sides>"]
+                    let sides = 20;
+                    if (parts.length >= 4) {
+                        const n = parseInt(parts[3], 10);
+                        if (isNaN(n) || n < 1) {
+                            sendChat("Please provide a positive integer number of sides, e.g. '.bot dice roll 6'.");
+                            return;
+                        }
+                        sides = n;
+                    }
+                    const roll = Math.floor(Math.random() * sides) + 1;
+                    sendChat(`Rolled: ${roll} (1-${sides})`);
                 }
 
                 // help command: list available commands
@@ -112,7 +123,7 @@
                         "Available bot commands:",
                         ".bot help - Show this help message",
                         ".bot test - Check if the bot is online",
-                        ".bot dice roll - Roll a d20 (1-20)",
+                        ".bot dice roll [sides] - Roll a die (default d20). Example: '.bot dice roll' or '.bot dice roll 6'",
                         ".bot clear motd - (admin) Clear the MOTD",
                         ".bot save - (admin) Save after 30s",
                         ".bot lock - (admin) Lock the chat",
