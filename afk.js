@@ -1,4 +1,4 @@
-const user = "TIMMY JOE"; // Replace with your user: "#4gKxOF"
+const user = "TIMMY JOE"; // Replace with your username
 const command = ".bot afk"; // Replace with a command of your choice.
 const defaultMessage = "afk"; // Message that'll be sent every 30 seconds
 
