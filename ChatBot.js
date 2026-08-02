@@ -92,12 +92,33 @@
                     setMOTD(" ")
                     sendChat("MOTD cleared!")
                 }
-                if (messageText === ".bot save") {
-                    sendChat("Saving in 30 seconds.")
+                if (messageText.toLowerCase().startsWith(".bot save")) {
+                    // supports: ".bot save" (default 30s), ".bot save 30", ".bot save 30s", ".bot save 2m"
+                    const parts = messageText.trim().split(/\s+/);
+                    let delaySeconds = 30; // default
+                    if (parts.length >= 3) {
+                        const arg = parts[2].toLowerCase();
+                        // plain number (seconds)
+                        if (/^\d+$/.test(arg)) {
+                            delaySeconds = parseInt(arg, 10);
+                        } else if (/^\d+s$/.test(arg)) {
+                            delaySeconds = parseInt(arg, 10);
+                        } else if (/^\d+m$/.test(arg)) {
+                            delaySeconds = parseInt(arg, 10) * 60;
+                        } else {
+                            sendChat("Please provide a positive integer number of seconds, e.g. '.bot save 30' or '.bot save 2m'.");
+                            return;
+                        }
+                    }
+                    if (isNaN(delaySeconds) || delaySeconds < 1) {
+                        sendChat("Please provide a positive number of seconds for the save delay.");
+                        return;
+                    }
+                    sendChat(`Saving in ${delaySeconds} seconds.`);
                     setTimeout(() => {
-                            // This code runs strictly after 30 seconds
+                            // This code runs strictly after the requested delay
                             sendChat("/save")
-                        }, 30000); 
+                        }, delaySeconds * 1000);
                 }
                 if (messageText === ".bot lock") {
                     sendChat("/lock 30000000")
