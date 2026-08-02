@@ -18,6 +18,9 @@
     let lastImmediate = Date.now();
     const COOLDOWN   = 1010; // ms
 
+    // bot uptime tracking
+    const botStartTime = Date.now();
+
     // force send a message
     function _immediateSend(message) {
         setTimeout(() => {
@@ -47,6 +50,23 @@
         if (motdEdit) motdEdit.click();
         if (motdText) motdText.value = text;
         if (motdSave) motdSave.click();
+    }
+
+    // format seconds into human readable time
+    function formatUptime(milliseconds) {
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const parts = [];
+        if (days > 0) parts.push(`${days}d`);
+        if (hours > 0) parts.push(`${hours}h`);
+        if (minutes > 0) parts.push(`${minutes}m`);
+        if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+
+        return parts.join(' ');
     }
 
     // message observer
@@ -117,6 +137,28 @@
                     sendChat(`Rolled: ${roll} (1-${sides})`);
                 }
 
+                // timer command: set a countdown timer
+                if (messageText.toLowerCase().startsWith(".bot timer")) {
+                    const parts = messageText.trim().split(/\s+/);
+                    const seconds = parseInt(parts[2], 10);
+                    
+                    if (isNaN(seconds) || seconds < 1) {
+                        sendChat("Please provide a positive number of seconds. Example: '.bot timer 60'");
+                        return;
+                    }
+                    
+                    sendChat(`⏱️ Timer started for ${seconds} seconds`);
+                    setTimeout(() => {
+                        sendChat("⏰ Time's up!");
+                    }, seconds * 1000);
+                }
+
+                // uptime command: show how long the bot has been running
+                if (messageText.toLowerCase() === ".bot uptime") {
+                    const uptime = formatUptime(Date.now() - botStartTime);
+                    sendChat(`Bot uptime: ${uptime}`);
+                }
+
                 // help command: list available commands
                 if (messageText === ".bot help") {
                     const helpLines = [
@@ -124,6 +166,8 @@
                         ".bot help - Show this help message",
                         ".bot test - Check if the bot is online",
                         ".bot dice roll [sides] - Roll a die (default d20). Example: '.bot dice roll' or '.bot dice roll 6'",
+                        ".bot timer [seconds] - Start a countdown timer. Example: '.bot timer 60'",
+                        ".bot uptime - Show how long the bot has been running",
                         ".bot clear motd - (admin) Clear the MOTD",
                         ".bot save - (admin) Save after 30s",
                         ".bot lock - (admin) Lock the chat",
