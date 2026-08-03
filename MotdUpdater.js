@@ -6,6 +6,9 @@
     // Template must include the token {uptime} where the formatted uptime will be inserted.
     const DEFAULT_TEMPLATE = 'AFK here 24 hours for cap\n3 hours for crew\nBot uptime: {uptime}';
 
+    // localStorage key for persisting accumulated uptime (milliseconds)
+    const ACCUM_KEY = 'motdUpdaterAccumulated';
+
     // DOM references (looked up on each update in case DOM is replaced)
     function getDomRefs() {
         return {
@@ -49,7 +52,31 @@
         return parts.join(' ');
     }
 
-    const botStartTime = Date.now();
+    // read persisted accumulated ms from localStorage (safe)
+    function readAccumulated() {
+        try {
+            const v = localStorage.getItem(ACCUM_KEY);
+            const n = Number(v);
+            return Number.isFinite(n) && n > 0 ? n : 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    // write accumulated ms to localStorage (safe)
+    function writeAccumulated(ms) {
+        try {
+            localStorage.setItem(ACCUM_KEY, String(ms));
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    // accumulated time from previous runs (ms)
+    let accumulatedMs = readAccumulated();
+
+    // start time of the current run
+    let botStartTime = Date.now();
 
     // get template: priority - window.MOTD_UPDATER_TEMPLATE, localStorage, default
     function getTemplate() {
@@ -66,9 +93,15 @@
     // update once: compute text and set MOTD
     function updateOnce() {
         const template = getTemplate();
-        const uptime = formatUptime(Date.now() - botStartTime);
+        const elapsedThisRun = Date.now() - botStartTime;
+        const totalElapsed = accumulatedMs + elapsedThisRun;
+        const uptime = formatUptime(totalElapsed);
         const text = template.replace('{uptime}', uptime);
         setMOTD(text);
+
+        // persist accumulated so future runs pick up where we left off
+        // save the total elapsed so far
+        writeAccumulated(totalElapsed);
     }
 
     // run every second
@@ -77,6 +110,9 @@
 
     function start() {
         if (intervalId) return;
+        // if there was an accumulated value saved previously, continue from there
+        accumulatedMs = readAccumulated();
+        botStartTime = Date.now();
         updateOnce();
         intervalId = setInterval(updateOnce, INTERVAL_MS);
     }
@@ -84,10 +120,37 @@
     // expose a small API for runtime customization
     window.MotdUpdater = {
         start,
-        stop() { if (intervalId) { clearInterval(intervalId); intervalId = null; } },
+        stop() {
+            if (intervalId) {
+                // persist current accumulated before stopping
+                const elapsedThisRun = Date.now() - botStartTime;
+                accumulatedMs = accumulatedMs + elapsedThisRun;
+                writeAccumulated(accumulatedMs);
+                clearInterval(intervalId);
+                intervalId = null;
+                // reset botStartTime so a subsequent start uses a fresh start timestamp
+                botStartTime = Date.now();
+            }
+        },
+        // set the template and persist it
         setTemplate(t) { try { window.MOTD_UPDATER_TEMPLATE = t; localStorage.setItem('motdUpdaterTemplate', t); } catch(e){} },
-        getTemplate
+        getTemplate,
+        // reset accumulated uptime back to zero
+        resetAccumulated() { accumulatedMs = 0; writeAccumulated(0); botStartTime = Date.now(); },
+        // read raw accumulated ms (for debugging)
+        _getAccumulatedMs() { return readAccumulated(); }
     };
+
+    // try to persist once more on page unload
+    try {
+        window.addEventListener('beforeunload', function() {
+            try {
+                const elapsedThisRun = Date.now() - botStartTime;
+                const totalElapsed = accumulatedMs + elapsedThisRun;
+                writeAccumulated(totalElapsed);
+            } catch (e) {}
+        });
+    } catch (e) {}
 
     // auto-start
     start();
