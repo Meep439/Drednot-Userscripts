@@ -4,7 +4,7 @@
 
     // Config: customize by setting window.MOTD_UPDATER_TEMPLATE or localStorage.motdUpdaterTemplate
     // Template must include the token {uptime} where the formatted uptime will be inserted.
-    const DEFAULT_TEMPLATE = 'Server uptime: {uptime}';
+    const DEFAULT_TEMPLATE = 'AFK here 24 hours for cap\n3 hours for crew\nBot uptime: {uptime}';
 
     // DOM references (looked up on each update in case DOM is replaced)
     function getDomRefs() {
