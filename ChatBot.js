@@ -192,7 +192,6 @@
                         ".bot clear motd - (admin) Clear the MOTD",
                         ".bot save - (admin) Save after 30s",
                         ".bot lock - (admin) Lock the chat",
-                        "(also responds to phrases: 'do the roar', 'joined the ship.', 'Joined ship')",
                     ];
                     // send as a single message joined by ' | ' to avoid spamming
                     sendChat(helpLines.join(' | '));
