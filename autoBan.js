@@ -174,7 +174,7 @@
                     if (isBanned(joinedName)) {
                         // Optionally greet (comment out if undesired):
                         // sendChat(`Hello, ${joinedName}!`);
-                        sendChat(`/ban ${joinedName.toLowerCase()}`);
+                        sendChat(`/kick ${joinedName.toLowerCase()}`);
                         console.log('autoBan: banned', joinedName);
                     }
                 }
