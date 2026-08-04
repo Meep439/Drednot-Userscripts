@@ -118,6 +118,9 @@
     // also catch "Joined ship" variations (for you joining)
     const joinedShipCaseInsensitive = /joined the ship/i;
 
+    // parse spoken messages like "Cmoney: hello!"
+    const speechRegex = /^(.+?):\s*(.*)$/;
+
     function handleMessage(mess) {
         if (!mess) return;
         // remove small badges if present
@@ -125,11 +128,11 @@
 
         const usernameElement = mess.querySelector('bdi');
         const messageText = mess.childNodes[mess.childNodes.length - 1].textContent.trim();
-        const username = usernameElement ? usernameElement.textContent : 'unknown';
+        const username = usernameElement ? usernameElement.textContent : null;
 
         // management commands: only captains can use them
         try {
-            if (captains.includes(username)) {
+            if (username && captains.includes(username)) {
                 // .autoban add Name
                 if (messageText.toLowerCase().startsWith('.autoban add ')) {
                     const name = messageText.substring(12).trim();
@@ -162,6 +165,27 @@
             }
         } catch (e) {
             console.error('autoBan management handling error', e);
+        }
+
+        // Auto-ban detection: if a banned user speaks ("Name: message"), kick them
+        try {
+            // determine speaker: prefer explicit username element, otherwise parse from message text
+            let speaker = username;
+            let spokenText = messageText;
+            if (!speaker) {
+                const s = messageText.match(speechRegex);
+                if (s && s[1]) {
+                    speaker = s[1].trim();
+                    spokenText = s[2] ? s[2].trim() : '';
+                }
+            }
+            if (speaker && isBanned(speaker)) {
+                sendChat(`/kick ${speaker.toLowerCase()}`);
+                console.log('autoBan: banned (spoke)', speaker);
+                return;
+            }
+        } catch (e) {
+            console.error('autoBan speech handling error', e);
         }
 
         // Auto-ban detection: look for join messages
