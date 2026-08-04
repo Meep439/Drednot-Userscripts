@@ -4,7 +4,7 @@
 
     // Config: customize by setting window.MOTD_UPDATER_TEMPLATE or localStorage.motdUpdaterTemplate
     // Template must include the token {uptime} where the formatted uptime will be inserted.
-    const DEFAULT_TEMPLATE = 'AFK here 24 hours for cap\n3 hours for crew\nBot uptime: {uptime}';
+    const DEFAULT_TEMPLATE = 'AFK here 24 hours for cap\n3 hours for crew\nBot uptime: {uptime}\n\nNo afk script? Go here!\nhttps://github.com/Meep439/Drednot-Userscripts';
 
     // localStorage key for persisting accumulated uptime (milliseconds)
     const ACCUM_KEY = 'motdUpdaterAccumulated';
