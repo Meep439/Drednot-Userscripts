@@ -134,7 +134,7 @@
         try {
             if (username && captains.includes(username)) {
                 // .autoban add Name
-                if (messageText.toLowerCase().startsWith('.autoban add ')) {
+                if (messageText.toLowerCase().startsWith('.ab add ')) {
                     const name = messageText.substring(12).trim();
                     if (!name) { sendChat('Usage: .autoban add <username>'); return; }
                     if (addBanned(name)) sendChat(`Added ${name} to auto-ban list.`);
@@ -142,7 +142,7 @@
                     return;
                 }
                 // .autoban remove Name
-                if (messageText.toLowerCase().startsWith('.autoban remove ')) {
+                if (messageText.toLowerCase().startsWith('.ab remove ')) {
                     const name = messageText.substring(15).trim();
                     if (!name) { sendChat('Usage: .autoban remove <username>'); return; }
                     if (removeBanned(name)) sendChat(`Removed ${name} from auto-ban list.`);
@@ -150,14 +150,14 @@
                     return;
                 }
                 // .autoban list
-                if (messageText.toLowerCase() === '.autoban list') {
+                if (messageText.toLowerCase() === '.ab list') {
                     const list = listBanned();
                     if (list.length === 0) sendChat('Auto-ban list is empty.');
                     else sendChat('Auto-ban: ' + list.join(', '));
                     return;
                 }
                 // .autoban clear
-                if (messageText.toLowerCase() === '.autoban clear') {
+                if (messageText.toLowerCase() === '.ab clear') {
                     clearBanned();
                     sendChat('Auto-ban list cleared.');
                     return;
