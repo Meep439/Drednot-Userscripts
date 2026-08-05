@@ -180,7 +180,7 @@
                 }
             }
             if (speaker && isBanned(speaker)) {
-                sendChat(`/kick ${speaker.toLowerCase()}`);
+                sendChat(`/ban ${speaker.toLowerCase()}`);
                 console.log('autoBan: banned (spoke)', speaker);
                 return;
             }
