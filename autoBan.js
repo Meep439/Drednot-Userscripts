@@ -134,7 +134,7 @@
         try {
             if (username && captains.includes(username)) {
                 // .autoban add Name
-                if (messageText.toLowerCase().startsWith('.ab add ')) {
+                if (messageText.toLowerCase().startsWith('.autoban add ')) {
                     const name = messageText.substring(12).trim();
                     if (!name) { sendChat('Usage: .autoban add <username>'); return; }
                     if (addBanned(name)) sendChat(`Added ${name} to auto-ban list.`);
