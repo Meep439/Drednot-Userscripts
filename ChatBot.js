@@ -200,23 +200,6 @@
                     const uptime = formatUptime(Date.now() - botStartTime);
                     sendChat(`Bot uptime: ${uptime}`);
                 }
-
-                // help command: list available commands
-                if (messageText === ".bot help") {
-                    const helpLines = [
-                        "Available bot commands:",
-                        ".bot help - Show this help message",
-                        ".bot test - Check if the bot is online",
-                        ".bot dice roll [sides] - Roll a die (default d20). Example: '.bot dice roll' or '.bot dice roll 6'",
-                        ".bot timer [seconds] - Start a countdown timer. Example: '.bot timer 60'",
-                        ".bot uptime - Show how long the bot has been running",
-                        ".bot clear motd - (admin) Clear the MOTD",
-                        ".bot save - (admin) Save after 30s",
-                        ".bot lock - (admin) Lock the chat",
-                    ];
-                    // send as a single message joined by ' | ' to avoid spamming
-                    sendChat(helpLines.join(' | '));
-                }
             }
         });
     }
