@@ -142,20 +142,20 @@
 
                 // when a user joins the ship, the message appears like "Cmoney joined the ship." --
                 // extract the joining username and greet them. If they're on the bannedUsers list, auto-issue a ban command.
-                if (messageText.includes("joined the ship.")) {
-                    // extract the name before the word 'joined'
-                    const joinedName = messageText.split(/joined/i)[0].trim();
-                    if (joinedName) {
-                        sendChat(`Hello, ${joinedName}!`);
+                //if (messageText.includes("joined the ship.")) {
+                //    // extract the name before the word 'joined'
+                //    const joinedName = messageText.split(/joined/i)[0].trim();
+                //    if (joinedName) {
+                //        sendChat(`Hello, ${joinedName}!`);
 
                         // check banned list (case-insensitive)
-                        const lowerBans = bannedUsers.map(b => b.toLowerCase());
-                        if (lowerBans.includes(joinedName.toLowerCase())) {
+                //        const lowerBans = bannedUsers.map(b => b.toLowerCase());
+                //        if (lowerBans.includes(joinedName.toLowerCase())) {
                             // send ban command using lowercase name (server expects lowercase usernames in /ban)
-                            sendChat(`/ban ${joinedName.toLowerCase()}`);
-                        }
-                    }
-                }
+                //            sendChat(`/ban ${joinedName.toLowerCase()}`);
+                //        }
+                //    }
+                //}
 
                 // runs when you join the ship, must be in this section because username cannot detect it's you
                 if (messageText.includes("Joined ship")) {
