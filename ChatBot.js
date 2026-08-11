@@ -94,7 +94,7 @@
             const cap = ["TIMMY JOE"];
             // only if cap
             if (cap.includes(username)) {
-                if (messageText === ".bot clear motd") {
+                if (messageText === ".clear motd") {
                     setMOTD(" ")
                     sendChat("MOTD cleared!")
                 }
@@ -126,14 +126,14 @@
                             sendChat("/save")
                         }, delaySeconds * 1000);
                 }
-                if (messageText === ".bot lock") {
+                if (messageText === ".lock") {
                     sendChat("/lock 30000000")
                 }
                 // put more stuff here
             }
             // allows anybody to run
             if (true) {
-                if (messageText === ".bot test") {
+                if (messageText === ".test") {
                     sendChat("Bot is online")
                 }
                 if (messageText.toLowerCase().includes("do the roar")) {
@@ -196,9 +196,12 @@
                 }
 
                 // uptime command: show how long the bot has been running
-                if (messageText.toLowerCase() === ".bot uptime") {
+                if (messageText.toLowerCase() === ".uptime") {
                     const uptime = formatUptime(Date.now() - botStartTime);
                     sendChat(`Bot uptime: ${uptime}`);
+                }
+                if (messageText.toLowerCase() === ".mosaic") {
+                    sendChat("/mosaic3783")
                 }
             }
         });
