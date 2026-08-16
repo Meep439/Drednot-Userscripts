@@ -48,6 +48,7 @@
         chatQueue.push(message);
         if (!queueActive) _immediateSend(message) //processQueue();
     }
+    sendChat("Bot now online")
 
     // set the motd
     function setMOTD(text) {
@@ -93,7 +94,6 @@
             // replace with your usernames
             const cap = ["TIMMY JOE"];
             // only if cap
-            sendChat("Bot now online")
             if (cap.includes(username)) {
                 if (messageText === ".clear motd") {
                     setMOTD(" ")
