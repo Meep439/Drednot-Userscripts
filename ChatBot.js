@@ -98,11 +98,6 @@
                     setMOTD(" ")
                     sendChat("MOTD cleared!")
                 }
-                if (messageText.toLowerCase() === ".end") {
-                    sendChat("Attempting to end the script...")
-                    throw new Error()
-                    sendChat("Error ending the script. Please try again.")
-                }
                 if (messageText.toLowerCase().startsWith(".bot save")) {
                     // supports: ".bot save" (default 30s), ".bot save 30", ".bot save 30s", ".bot save 2m"
                     const parts = messageText.trim().split(/\s+/);
@@ -139,7 +134,7 @@
             // allows anybody to run
             if (true) {
                 if (messageText === ".test") {
-                    sendChat("Bot is active")
+                    sendChat("Bot is online")
                 }
                 if (messageText.toLowerCase().includes("do the roar")) {
                     sendChat("Roar!")            
@@ -163,6 +158,9 @@
                 //}
 
                 // runs when you join the ship, must be in this section because username cannot detect it's you
+                if (messageText.includes("Joined ship")) {
+                    sendChat("Hai!")
+                }
 
                 // dice roll command: responds with a random number from 1 to 20 (default) or 1..N if specified
                 if (messageText.toLowerCase().startsWith(".bot dice roll")) {
