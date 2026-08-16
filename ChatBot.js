@@ -93,6 +93,7 @@
             // replace with your usernames
             const cap = ["TIMMY JOE"];
             // only if cap
+            sendChat("Bot now online")
             if (cap.includes(username)) {
                 if (messageText === ".clear motd") {
                     setMOTD(" ")
@@ -134,7 +135,7 @@
             // allows anybody to run
             if (true) {
                 if (messageText === ".test") {
-                    sendChat("Bot is online")
+                    sendChat("Bot is active")
                 }
                 if (messageText.toLowerCase().includes("do the roar")) {
                     sendChat("Roar!")            
@@ -159,7 +160,7 @@
 
                 // runs when you join the ship, must be in this section because username cannot detect it's you
                 if (messageText.includes("Joined ship")) {
-                    sendChat("Hai!")
+                    sendChat("Bot is active")
                 }
 
                 // dice roll command: responds with a random number from 1 to 20 (default) or 1..N if specified
