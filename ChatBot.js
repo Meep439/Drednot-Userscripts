@@ -99,6 +99,11 @@
                     setMOTD(" ")
                     sendChat("MOTD cleared!")
                 }
+                if (messageText.toLowerCase() === ".end") {
+                    sendChat("Attempting to end the script...")
+                    throw new Error()
+                    sendChat("Error ending the script. Please try again.")
+                }
                 if (messageText.toLowerCase().startsWith(".bot save")) {
                     // supports: ".bot save" (default 30s), ".bot save 30", ".bot save 30s", ".bot save 2m"
                     const parts = messageText.trim().split(/\s+/);
