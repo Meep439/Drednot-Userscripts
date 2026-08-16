@@ -48,7 +48,6 @@
         chatQueue.push(message);
         if (!queueActive) _immediateSend(message) //processQueue();
     }
-    sendChat("Bot now online")
 
     // set the motd
     function setMOTD(text) {
