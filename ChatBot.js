@@ -163,9 +163,6 @@
                 //}
 
                 // runs when you join the ship, must be in this section because username cannot detect it's you
-                if (messageText.includes("Joined ship")) {
-                    sendChat("Bot is active")
-                }
 
                 // dice roll command: responds with a random number from 1 to 20 (default) or 1..N if specified
                 if (messageText.toLowerCase().startsWith(".bot dice roll")) {
