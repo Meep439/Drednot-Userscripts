@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Drednot AutoBan
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      2.0
 // @description  Auto-ban specified users when they join the ship; manage list with chat commands.
 // @match        *://*.drednot.io/*
 // @grant        none
@@ -10,212 +10,325 @@
 (function() {
     'use strict';
 
-    // CONFIG
-    const STORAGE_KEY = 'autoBan.bannedUsers';
-    const COOLDOWN = 1010; // ms between outgoing messages
-    const captains = ['TIMMY JOE']; // who can run management commands
+    // ============================================================================
+    // CONFIGURATION
+    // ============================================================================
+    const CONFIG = {
+        STORAGE_KEY: 'autoBan.bannedUsers',
+        MESSAGE_COOLDOWN: 1010, // ms between outgoing messages
+        AUTHORIZED_USERS: ['TIMMY JOE'], // who can run management commands
+    };
 
-    // DOM refs
-    const chatBox     = document.getElementById('chat');
-    const chatInp     = document.getElementById('chat-input');
-    const chatBtn     = document.getElementById('chat-send');
-    const chatContent = document.querySelector('#chat-content');
+    // ============================================================================
+    // DOM CACHE & STATE
+    // ============================================================================
+    const DOM = {
+        chatBox: document.getElementById('chat'),
+        chatInput: document.getElementById('chat-input'),
+        chatButton: document.getElementById('chat-send'),
+        chatContent: document.querySelector('#chat-content'),
+    };
 
-    // send queue (prevents spamming)
-    const chatQueue = [];
-    let queueActive = false;
+    let messageQueue = [];
+    let isQueueActive = false;
+    let bannedUsers = [];
 
-    function _immediateSend(msg) {
-        setTimeout(() => {
-            if (!chatInp || !chatBtn) return;
-            if (chatBox && chatBox.classList.contains('closed')) chatBtn.click();
-            chatInp.value = msg;
-            chatBtn.click();
-        }, COOLDOWN);
-    }
-
-    function processQueue() {
-        if (chatQueue.length === 0) {
-            queueActive = false;
-            return;
-        }
-        queueActive = true;
-        const m = chatQueue.shift();
-        _immediateSend(m);
-        setTimeout(processQueue, COOLDOWN);
-    }
-
-    function sendChat(message) {
-        chatQueue.push(message);
-        if (!queueActive) processQueue();
-    }
-
-    // banned users persistence
-    function loadBanned() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return [];
-            return JSON.parse(raw);
-        } catch (e) {
-            console.error('autoBan: failed to load banned list', e);
-            return [];
-        }
-    }
-    function saveBanned(list) {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-        } catch (e) {
-            console.error('autoBan: failed to save banned list', e);
-        }
-    }
-
-    let bannedUsers = loadBanned(); // array of canonical names (strings)
-
-    // helper utils
-    function canonical(name) {
-        return (name || '').trim();
-    }
-    function isBanned(name) {
-        if (!name) return false;
-        const n = name.toLowerCase();
-        return bannedUsers.some(b => canonical(b).toLowerCase() === n);
-    }
-    function addBanned(name) {
-        const c = canonical(name);
-        if (!c) return false;
-        if (!isBanned(c)) {
-            bannedUsers.push(c);
-            saveBanned(bannedUsers);
-            return true;
-        }
-        return false;
-    }
-    function removeBanned(name) {
-        const c = canonical(name).toLowerCase();
-        const before = bannedUsers.length;
-        bannedUsers = bannedUsers.filter(b => b.toLowerCase() !== c);
-        if (bannedUsers.length !== before) {
-            saveBanned(bannedUsers);
-            return true;
-        }
-        return false;
-    }
-    function listBanned() {
-        return bannedUsers.slice();
-    }
-    function clearBanned() {
-        bannedUsers = [];
-        saveBanned(bannedUsers);
-    }
-
-    // observe chat messages
-    function observeNode(node, callback) {
-        new MutationObserver(callback).observe(node, { childList: true });
-    }
-
-    // parse messages like "Cmoney joined the ship." (robust)
-    const joinRegex = /^(.+?)\s+joined the ship\.?$/i; // captures name
-    // also catch "Joined ship" variations (for you joining)
-    const joinedShipCaseInsensitive = /joined the ship/i;
-
-    // parse spoken messages like "Cmoney: hello!"
-    const speechRegex = /^(.+?):\s*(.*)$/;
-
-    function handleMessage(mess) {
-        if (!mess) return;
-        // remove small badges if present
-        mess.querySelectorAll('.user-badge-small').forEach(b => b.remove());
-
-        const usernameElement = mess.querySelector('bdi');
-        const messageText = mess.childNodes[mess.childNodes.length - 1].textContent.trim();
-        const username = usernameElement ? usernameElement.textContent : null;
-
-        // management commands: only captains can use them
-        try {
-            if (username && captains.includes(username)) {
-                // .autoban add Name
-                if (messageText.toLowerCase().startsWith('.autoban add ')) {
-                    const name = messageText.substring(12).trim();
-                    if (!name) { sendChat('Usage: .autoban add <username>'); return; }
-                    if (addBanned(name)) sendChat(`Added ${name} to auto-ban list.`);
-                    else sendChat(`${name} is already on the auto-ban list.`);
-                    return;
-                }
-                // .autoban remove Name
-                if (messageText.toLowerCase().startsWith('.ab remove ')) {
-                    const name = messageText.substring(15).trim();
-                    if (!name) { sendChat('Usage: .autoban remove <username>'); return; }
-                    if (removeBanned(name)) sendChat(`Removed ${name} from auto-ban list.`);
-                    else sendChat(`${name} was not on the auto-ban list.`);
-                    return;
-                }
-                // .autoban list
-                if (messageText.toLowerCase() === '.ab list') {
-                    const list = listBanned();
-                    if (list.length === 0) sendChat('Auto-ban list is empty.');
-                    else sendChat('Auto-ban: ' + list.join(', '));
-                    return;
-                }
-                // .autoban clear
-                if (messageText.toLowerCase() === '.ab clear') {
-                    clearBanned();
-                    sendChat('Auto-ban list cleared.');
-                    return;
-                }
+    // ============================================================================
+    // STORAGE OPERATIONS
+    // ============================================================================
+    const Storage = {
+        load() {
+            try {
+                const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (error) {
+                console.error('AutoBan: Failed to load banned list', error);
+                return [];
             }
-        } catch (e) {
-            console.error('autoBan management handling error', e);
-        }
+        },
 
-        // Auto-ban detection: if a banned user speaks ("Name: message"), kick them
-        try {
-            // determine speaker: prefer explicit username element, otherwise parse from message text
-            let speaker = username;
-            let spokenText = messageText;
-            if (!speaker) {
-                const s = messageText.match(speechRegex);
-                if (s && s[1]) {
-                    speaker = s[1].trim();
-                    spokenText = s[2] ? s[2].trim() : '';
-                }
+        save(list) {
+            try {
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(list));
+            } catch (error) {
+                console.error('AutoBan: Failed to save banned list', error);
             }
-            if (speaker && isBanned(speaker)) {
-                sendChat(`/ban ${speaker.toLowerCase()}`);
-                console.log('autoBan: banned (spoke)', speaker);
+        },
+    };
+
+    // ============================================================================
+    // BANNED USER MANAGEMENT
+    // ============================================================================
+    const BanList = {
+        normalize(name) {
+            return (name || '').trim();
+        },
+
+        isBanned(name) {
+            if (!name) return false;
+            const normalized = name.toLowerCase();
+            return bannedUsers.some(b => this.normalize(b).toLowerCase() === normalized);
+        },
+
+        add(name) {
+            const normalized = this.normalize(name);
+            if (!normalized) return false;
+
+            if (this.isBanned(normalized)) {
+                return false; // already banned
+            }
+
+            bannedUsers.push(normalized);
+            Storage.save(bannedUsers);
+            return true;
+        },
+
+        remove(name) {
+            const normalized = this.normalize(name).toLowerCase();
+            const initialLength = bannedUsers.length;
+
+            bannedUsers = bannedUsers.filter(
+                b => this.normalize(b).toLowerCase() !== normalized
+            );
+
+            if (bannedUsers.length !== initialLength) {
+                Storage.save(bannedUsers);
+                return true;
+            }
+
+            return false;
+        },
+
+        list() {
+            return bannedUsers.slice();
+        },
+
+        clear() {
+            bannedUsers = [];
+            Storage.save(bannedUsers);
+        },
+    };
+
+    // ============================================================================
+    // CHAT MESSAGE QUEUE & SENDING
+    // ============================================================================
+    const Chat = {
+        isReady() {
+            return DOM.chatInput && DOM.chatButton && DOM.chatContent;
+        },
+
+        openIfClosed() {
+            if (DOM.chatBox && DOM.chatBox.classList.contains('closed')) {
+                DOM.chatButton.click();
+            }
+        },
+
+        sendImmediate(message) {
+            setTimeout(() => {
+                if (!this.isReady()) return;
+                this.openIfClosed();
+                DOM.chatInput.value = message;
+                DOM.chatButton.click();
+            }, CONFIG.MESSAGE_COOLDOWN);
+        },
+
+        processQueue() {
+            if (messageQueue.length === 0) {
+                isQueueActive = false;
                 return;
             }
-        } catch (e) {
-            console.error('autoBan speech handling error', e);
-        }
 
-        // Auto-ban detection: look for join messages
+            isQueueActive = true;
+            const message = messageQueue.shift();
+            this.sendImmediate(message);
+            setTimeout(() => this.processQueue(), CONFIG.MESSAGE_COOLDOWN);
+        },
+
+        send(message) {
+            messageQueue.push(message);
+            if (!isQueueActive) {
+                this.processQueue();
+            }
+        },
+    };
+
+    // ============================================================================
+    // MESSAGE PARSING & REGEX PATTERNS
+    // ============================================================================
+    const Patterns = {
+        JOIN_MESSAGE: /^(.+?)\s+joined the ship\.?$/i,
+        JOINED_SHIP: /joined the ship/i,
+        SPOKEN_MESSAGE: /^(.+?):\s*(.*)$/,
+    };
+
+    const Parser = {
+        extractUsername(messageElement) {
+            const usernameEl = messageElement.querySelector('bdi');
+            return usernameEl ? usernameEl.textContent : null;
+        },
+
+        extractMessageText(messageElement) {
+            // Get the last text node (typically the message content)
+            const lastNode = messageElement.childNodes[messageElement.childNodes.length - 1];
+            return lastNode ? lastNode.textContent.trim() : '';
+        },
+
+        parseJoin(messageText) {
+            const match = messageText.match(Patterns.JOIN_MESSAGE);
+            return match ? match[1].trim() : null;
+        },
+
+        parseSpeaker(messageText) {
+            const match = messageText.match(Patterns.SPOKEN_MESSAGE);
+            if (match && match[1]) {
+                return {
+                    speaker: match[1].trim(),
+                    message: match[2] ? match[2].trim() : '',
+                };
+            }
+            return null;
+        },
+    };
+
+    // ============================================================================
+    // COMMAND HANDLERS
+    // ============================================================================
+    const Commands = {
+        isAuthorized(username) {
+            return CONFIG.AUTHORIZED_USERS.includes(username);
+        },
+
+        handle(username, messageText) {
+            const lowerText = messageText.toLowerCase();
+
+            // .autoban add <username>
+            if (lowerText.startsWith('.autoban add ')) {
+                const name = messageText.substring(13).trim();
+                if (!name) {
+                    Chat.send('Usage: .autoban add <username>');
+                    return;
+                }
+                if (BanList.add(name)) {
+                    Chat.send(`✓ Added ${name} to auto-ban list.`);
+                } else {
+                    Chat.send(`✗ ${name} is already on the auto-ban list.`);
+                }
+                return;
+            }
+
+            // .autoban remove <username>
+            if (lowerText.startsWith('.autoban remove ') || lowerText.startsWith('.ab remove ')) {
+                const prefix = lowerText.startsWith('.autoban remove ') ? '.autoban remove ' : '.ab remove ';
+                const name = messageText.substring(prefix.length).trim();
+                if (!name) {
+                    Chat.send('Usage: .autoban remove <username>');
+                    return;
+                }
+                if (BanList.remove(name)) {
+                    Chat.send(`✓ Removed ${name} from auto-ban list.`);
+                } else {
+                    Chat.send(`✗ ${name} was not on the auto-ban list.`);
+                }
+                return;
+            }
+
+            // .autoban list or .ab list
+            if (lowerText === '.autoban list' || lowerText === '.ab list') {
+                const list = BanList.list();
+                if (list.length === 0) {
+                    Chat.send('Auto-ban list is empty.');
+                } else {
+                    Chat.send(`Auto-ban list (${list.length}): ${list.join(', ')}`);
+                }
+                return;
+            }
+
+            // .autoban clear or .ab clear
+            if (lowerText === '.autoban clear' || lowerText === '.ab clear') {
+                BanList.clear();
+                Chat.send('✓ Auto-ban list cleared.');
+                return;
+            }
+        },
+    };
+
+    // ============================================================================
+    // MESSAGE HANDLERS
+    // ============================================================================
+    function handleMessage(messageElement) {
+        if (!messageElement) return;
+
         try {
-            if (joinedShipCaseInsensitive.test(messageText)) {
-                const m = messageText.match(joinRegex);
-                if (m && m[1]) {
-                    const joinedName = m[1].trim();
-                    // If the joined user is banned, issue /ban <lowercase>
-                    if (isBanned(joinedName)) {
-                        // Optionally greet (comment out if undesired):
-                        // sendChat(`Hello, ${joinedName}!`);
-                        sendChat(`/kick ${joinedName.toLowerCase()}`);
-                        console.log('autoBan: banned', joinedName);
-                    }
+            // Clean up small badges
+            messageElement.querySelectorAll('.user-badge-small').forEach(badge => badge.remove());
+
+            const username = Parser.extractUsername(messageElement);
+            const messageText = Parser.extractMessageText(messageElement);
+
+            if (!messageText) return;
+
+            // Handle management commands
+            if (username && Commands.isAuthorized(username)) {
+                Commands.handle(username, messageText);
+                return;
+            }
+
+            // Check for join message
+            if (Patterns.JOINED_SHIP.test(messageText)) {
+                const joinedName = Parser.parseJoin(messageText);
+                if (joinedName && BanList.isBanned(joinedName)) {
+                    Chat.send(`/kick ${joinedName.toLowerCase()}`);
+                    console.log('AutoBan: Kicked banned user on join:', joinedName);
+                    return;
                 }
             }
-        } catch (e) {
-            console.error('autoBan join handling error', e);
+
+            // Check for spoken message
+            const spoken = Parser.parseSpeaker(messageText);
+            if (spoken && spoken.speaker && BanList.isBanned(spoken.speaker)) {
+                Chat.send(`/kick ${spoken.speaker.toLowerCase()}`);
+                console.log('AutoBan: Kicked banned user on speak:', spoken.speaker);
+                return;
+            }
+        } catch (error) {
+            console.error('AutoBan: Error handling message', error);
         }
     }
 
-    if (chatContent) {
-        observeNode(chatContent, () => {
-            const mess = document.querySelector('#chat-content > p:last-of-type');
-            if (!mess) return;
-            handleMessage(mess);
+    // ============================================================================
+    // INITIALIZATION
+    // ============================================================================
+    function init() {
+        // Load banned users from storage
+        bannedUsers = Storage.load();
+        console.log('AutoBan: Loaded banned users:', bannedUsers);
+
+        // Check DOM availability
+        if (!DOM.chatContent) {
+            console.warn('AutoBan: Chat content element not found. Script inactive.');
+            return;
+        }
+
+        if (!Chat.isReady()) {
+            console.warn('AutoBan: Chat UI elements not fully loaded.');
+        }
+
+        // Observe new messages
+        const observer = new MutationObserver(() => {
+            const lastMessage = document.querySelector('#chat-content > p:last-of-type');
+            if (lastMessage) {
+                handleMessage(lastMessage);
+            }
         });
-    } else {
-        console.warn('autoBan: chatContent element not found - script inactive.');
+
+        observer.observe(DOM.chatContent, { childList: true });
+        console.log('AutoBan: Initialized and listening for messages.');
     }
 
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();
