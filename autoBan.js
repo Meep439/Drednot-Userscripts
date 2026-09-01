@@ -201,11 +201,11 @@
         handle(username, messageText) {
             const lowerText = messageText.toLowerCase();
 
-            // .autoban add <username>
-            if (lowerText.startsWith('.autoban add ')) {
-                const name = messageText.substring(13).trim();
+            // .ab add <username>
+            if (lowerText.startsWith('.ab add ')) {
+                const name = messageText.substring(8).trim();
                 if (!name) {
-                    Chat.send('Usage: .autoban add <username>');
+                    Chat.send('Usage: .ab add <username>');
                     return;
                 }
                 if (BanList.add(name)) {
@@ -216,12 +216,11 @@
                 return;
             }
 
-            // .autoban remove <username>
-            if (lowerText.startsWith('.autoban remove ') || lowerText.startsWith('.ab remove ')) {
-                const prefix = lowerText.startsWith('.autoban remove ') ? '.autoban remove ' : '.ab remove ';
-                const name = messageText.substring(prefix.length).trim();
+            // .ab remove <username>
+            if (lowerText.startsWith('.ab remove ')) {
+                const name = messageText.substring(11).trim();
                 if (!name) {
-                    Chat.send('Usage: .autoban remove <username>');
+                    Chat.send('Usage: .ab remove <username>');
                     return;
                 }
                 if (BanList.remove(name)) {
@@ -232,8 +231,8 @@
                 return;
             }
 
-            // .autoban list or .ab list
-            if (lowerText === '.autoban list' || lowerText === '.ab list') {
+            // .ab list
+            if (lowerText === '.ab list') {
                 const list = BanList.list();
                 if (list.length === 0) {
                     Chat.send('Auto-ban list is empty.');
@@ -243,8 +242,8 @@
                 return;
             }
 
-            // .autoban clear or .ab clear
-            if (lowerText === '.autoban clear' || lowerText === '.ab clear') {
+            // .ab clear
+            if (lowerText === '.ab clear') {
                 BanList.clear();
                 Chat.send('✓ Auto-ban list cleared.');
                 return;
